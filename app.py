@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     with st.form("input_data"):
         name = st.text_input("이름을 입력해주세요", value=st.session_state["name"])
-        phone_num = st.text_input("전화번호를 입력해주세요", value=st.session_state["phone_num"])
+        phone_num = st.text_input("전화번호를 입력해주세요(우승자 상품 제공 용도(형식: 01012345678))", value=st.session_state["phone_num"])
         image = st.file_uploader("이미지를 업로드해주세요.", type=["png", "jpg", "jpeg"])
 
         submit = st.form_submit_button("정확도 측정하기")
@@ -53,31 +53,31 @@ if __name__ == "__main__":
         elif len(image.getvalue()) > 5 * 1024 * 1024:
             st.warning("⚠️ 파일 크기가 너무 큽니다! (최대 5MB)")
         else:
-            db_path = os.path.abspath(Config.SQL_DIR)
-            if not db_path.startswith(os.path.abspath("safe_db_directory")):
-                st.error("❌ 잘못된 데이터베이스 접근입니다!")
-            else:
-                try:
-                    conn = sqlite3.connect(db_path)
-                    cursor = conn.cursor()
+            # db_path = os.path.abspath(Config.SQL_DIR)
+            # if not db_path.startswith(os.path.abspath("safe_db_directory")):
+            #     st.error("❌ 잘못된 데이터베이스 접근입니다!")
+            # else:
+            try:
+                conn = sqlite3.connect(Config.SQL_DIR)
+                cursor = conn.cursor()
 
-                    real_acc = image_accuracy_calculator(Config.ORG_IMG_DIR, image)
-                    binary_data = image.getvalue()
-                    data = (name, phone_num, real_acc, binary_data)
+                real_acc = image_accuracy_calculator(Config.ORG_IMG_DIR, image)
+                binary_data = image.getvalue()
+                data = (name, phone_num, real_acc, binary_data)
 
-                    cursor.execute("""
-                    INSERT INTO image_acc (usr_nm, phone_num, acc, img_data)
-                        VALUES (?, ?, ?, ?);
-                    """, data)
-                    conn.commit()
+                cursor.execute("""
+                INSERT INTO image_acc (usr_nm, phone_num, acc, img_data)
+                    VALUES (?, ?, ?, ?);
+                """, data)
+                conn.commit()
 
-                    st.session_state["name"] = name
-                    st.session_state["phone_num"] = phone_num
+                st.session_state["name"] = name
+                st.session_state["phone_num"] = phone_num
 
-                    st.success("✅ 데이터가 성공적으로 저장되었습니다!")
-                    st.rerun()
-                except sqlite3.DatabaseError as e:
-                    conn.rollback()
-                    st.error(f"❌ 데이터베이스 오류: {e}")
-                finally:
-                    conn.close()
+                st.success("✅ 데이터가 성공적으로 저장되었습니다!")
+                st.rerun()
+            except sqlite3.DatabaseError as e:
+                conn.rollback()
+                st.error(f"❌ 데이터베이스 오류: {e}")
+            finally:
+                conn.close()
