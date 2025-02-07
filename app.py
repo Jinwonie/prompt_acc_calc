@@ -4,10 +4,7 @@ import sqlite3
 import streamlit as st
 from imghdr import what
 from conf import Config
-from dotenv import load_dotenv
 from src import image_accuracy_calculator, load_df, image_formatter
-
-load_dotenv()
 
 if __name__ == "__main__":
     st.set_page_config(page_title="프롬프트 정확도 측정기", page_icon="📜", layout="centered")
