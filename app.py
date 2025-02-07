@@ -63,9 +63,9 @@ if __name__ == "__main__":
                 conn = sqlite3.connect(Config.SQL_DIR)
                 cursor = conn.cursor()
 
-                real_acc = image_accuracy_calculator(Config.ORG_IMG_DIR, image)
+                acc = image_accuracy_calculator(Config.ORG_IMG_DIR, image)
                 binary_data = image.getvalue()
-                data = (name, phone_num, real_acc, binary_data)
+                data = (name, phone_num, acc, binary_data)
 
                 cursor.execute("""
                 INSERT INTO image_acc (usr_nm, phone_num, acc, img_data)
@@ -73,6 +73,7 @@ if __name__ == "__main__":
                 """, data)
                 conn.commit()
 
+                st.session_state["acc"] = acc
                 st.session_state["name"] = name
                 st.session_state["phone_num"] = phone_num
 
