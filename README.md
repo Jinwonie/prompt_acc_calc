@@ -5,6 +5,7 @@
 
 **How to use**
 ```
-git clone 
+# [terminal]
+git clone https://github.com/Jinwonie/prompt_acc_calc.git
 streamlit run app.py
 ```
