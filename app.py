@@ -24,6 +24,12 @@ if __name__ == "__main__":
 
         submit = st.form_submit_button("정확도 측정하기")
     
+    get_name = st.session_state.get("name", "")
+    score = st.session_state.get("acc", "")
+    
+    st.write("")
+    st.write(f"{get_name}님의 프롬프트 점수는 {score}% 입니다.")
+    
     st.write("")
     st.write("현재 랭킹👑")
     select_sql = "SELECT * FROM image_acc"
@@ -53,10 +59,6 @@ if __name__ == "__main__":
         elif len(image.getvalue()) > 5 * 1024 * 1024:
             st.warning("⚠️ 파일 크기가 너무 큽니다! (최대 5MB)")
         else:
-            # db_path = os.path.abspath(Config.SQL_DIR)
-            # if not db_path.startswith(os.path.abspath("safe_db_directory")):
-            #     st.error("❌ 잘못된 데이터베이스 접근입니다!")
-            # else:
             try:
                 conn = sqlite3.connect(Config.SQL_DIR)
                 cursor = conn.cursor()
@@ -74,7 +76,6 @@ if __name__ == "__main__":
                 st.session_state["name"] = name
                 st.session_state["phone_num"] = phone_num
 
-                st.success("✅ 데이터가 성공적으로 저장되었습니다!")
                 st.rerun()
             except sqlite3.DatabaseError as e:
                 conn.rollback()
