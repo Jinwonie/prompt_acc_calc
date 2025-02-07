@@ -3,7 +3,7 @@
 
 ![image](https://github.com/user-attachments/assets/5399a3b4-40ee-4ac8-aa0e-eb199f4b0e4f)
 
-** How to use **
+**How to use**
 ```
 streamlit run app.py
 ```
