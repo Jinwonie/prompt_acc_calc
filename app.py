@@ -26,6 +26,23 @@ if __name__ == "__main__":
         image = st.file_uploader("이미지를 업로드해주세요.", type=["png", "jpg", "jpeg"])
 
         submit = st.form_submit_button("정확도 측정하기")
+    
+    st.write("")
+    st.write("현재 랭킹👑")
+    select_sql = "SELECT * FROM image_acc"
+    df = load_df(Config.SQL_DIR, select_sql)
+    df["img_data"] = df["img_data"].apply(image_formatter)
+    df.columns = [["이름", "점수", "이미지"]]
+    df.insert(0, "등수", df.index + 1)  # 등수 컬럼 추가
+    
+    # HTML 테이블 생성
+    table_html = "<table><tr><th>등수</th><th>이름</th><th>점수</th><th>이미지</th></tr>"
+    for _, row in df.iterrows():
+        table_html += f"<tr><td>{row['등수']}</td><td>{row['이름']}</td><td>{row['점수']}%</td><td>{row['이미지']}</td></tr>"
+    table_html += "</table>"
+
+    # Streamlit에서 HTML로 출력
+    st.markdown(table_html, unsafe_allow_html=True)
 
     if submit:
         if not name or not phone_num or not image:
