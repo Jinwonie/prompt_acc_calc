@@ -24,11 +24,11 @@ if __name__ == "__main__":
 
         submit = st.form_submit_button("정확도 측정하기")
     
-    get_name = st.session_state.get("name", "")
-    score = st.session_state.get("acc", "")
-    
-    st.write("")
-    st.write(f"{get_name}님의 프롬프트 점수는 {score}% 입니다.")
+    if ("name" in st.session_state and st.session_state.name) and ("acc" in st.session_state and st.session_state.acc):
+        get_name = st.session_state.get("name", "")
+        score = st.session_state.get("acc", "")
+        st.write("")
+        st.write(f"{get_name}님의 프롬프트 점수는 {score}% 입니다.")
     
     st.write("")
     st.write("현재 랭킹👑")
