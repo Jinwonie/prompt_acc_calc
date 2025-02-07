@@ -5,5 +5,6 @@
 
 **How to use**
 ```
+git clone 
 streamlit run app.py
 ```
