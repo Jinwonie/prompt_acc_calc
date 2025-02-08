@@ -6,7 +6,7 @@ import pandas as pd
 from PIL import Image
 from io import BytesIO
 import skimage.metrics as metrics
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 
 ########## Functions ##########
 def img_resizing(org_img_dir, target_img_dir):
