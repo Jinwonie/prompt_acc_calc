@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     with st.form("input_data"):
         name = st.text_input("이름을 입력해주세요", value=st.session_state["name"])
-        phone_num = st.text_input("전화번호를 입력해주세요(우승자 상품 제공 용도로 활용됩니다.) - 형식: 01012345678)", value=st.session_state["phone_num"])
+        phone_num = st.text_input("전화번호를 입력해주세요(우승자 상품 제공 용도로 활용됩니다.) - 형식: 01012345678", value=st.session_state["phone_num"])
         image = st.file_uploader("이미지를 업로드해주세요.", type=["png", "jpg", "jpeg"])
 
         submit = st.form_submit_button("정확도 측정하기")
