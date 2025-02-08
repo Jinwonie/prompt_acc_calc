@@ -1,12 +1,12 @@
 ########## Import ##########
 import cv2
 import base64
+import sqlite3
 import numpy as np
 import pandas as pd
 from PIL import Image
 from io import BytesIO
 import skimage.metrics as metrics
-from sqlalchemy import create_engine, text
 
 ########## Functions ##########
 def img_resizing(org_img_dir, target_img_dir):
@@ -34,8 +34,7 @@ def image_accuracy_calculator(org_img_dir, target_img_dir):
     return acc
 
 def load_df(sql_dir, sql_query):
-    engine = create_engine(sql_dir)
-    conn = engine.connect()
+    conn = sqlite3.connect(sql_dir)
     df = pd.read_sql(sql_query, conn)
     df = df.loc[df.groupby(["usr_nm", "phone_num"])["acc"].idxmax(), ["usr_nm", "acc", "img_data"]]
     df = df.sort_values(by="acc", ascending=False).reset_index(drop=True)

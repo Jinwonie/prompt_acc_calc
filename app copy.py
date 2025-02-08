@@ -1,9 +1,9 @@
+import os
 import re
+import sqlite3
 import streamlit as st
 from imghdr import what
 from conf import Config
-from sqlalchemy import create_engine, text
-from sqlalchemy.exc import SQLAlchemyError
 from src import image_accuracy_calculator, load_df, image_formatter
 
 if __name__ == "__main__":
@@ -31,7 +31,7 @@ if __name__ == "__main__":
         st.write(f"{get_name}님의 프롬프트 점수는 {score}% 입니다.")
 
     select_sql = "SELECT * FROM image_acc"
-    df = load_df(Config.DATABASE_URL, select_sql)
+    df = load_df(Config.SQL_DIR, select_sql)
     if len(df) > 0:
         st.write("")
         st.write("현재 랭킹👑")
@@ -61,31 +61,26 @@ if __name__ == "__main__":
             st.warning("⚠️ 파일 크기가 너무 큽니다! (최대 5MB)")
         else:
             try:
-                engine = create_engine(Config.DATABASE_URL)
+                conn = sqlite3.connect(Config.SQL_DIR)
+                cursor = conn.cursor()
 
                 acc = image_accuracy_calculator(Config.ORG_IMG_DIR, image)
                 binary_data = image.getvalue()
+                data = (name, phone_num, acc, binary_data)
 
-                # 데이터 삽입
-                insert_sql = text("""
-                    INSERT INTO image_acc (usr_nm, phone_num, acc, img_data)
-                    VALUES (:usr_nm, :phone_num, :acc, :img_data)
-                """)
+                cursor.execute("""
+                INSERT INTO image_acc (usr_nm, phone_num, acc, img_data)
+                    VALUES (?, ?, ?, ?);
+                """, data)
+                conn.commit()
 
-                with engine.begin() as conn:  # 자동 commit, rollback 지원
-                    conn.execute(insert_sql, {
-                        "usr_nm": name,
-                        "phone_num": phone_num,
-                        "acc": float(acc),
-                        "img_data": binary_data
-                    })
-
-                # Streamlit 세션 상태 저장
                 st.session_state["acc"] = acc
                 st.session_state["name"] = name
                 st.session_state["phone_num"] = phone_num
 
                 st.rerun()
-
-            except SQLAlchemyError as e:
+            except sqlite3.DatabaseError as e:
+                conn.rollback()
                 st.error(f"❌ 데이터베이스 오류: {e}")
+            finally:
+                conn.close()
