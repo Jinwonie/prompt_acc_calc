@@ -66,19 +66,40 @@ if __name__ == "__main__":
                 acc = image_accuracy_calculator(Config.ORG_IMG_DIR, image)
                 binary_data = image.getvalue()
 
-                # 데이터 삽입
+                # 기존 데이터 확인 쿼리
+                check_sql = text("""
+                    SELECT acc FROM image_acc WHERE usr_nm = :usr_nm AND phone_num = :phone_num
+                """)
+
                 insert_sql = text("""
                     INSERT INTO image_acc (usr_nm, phone_num, acc, img_data)
                     VALUES (:usr_nm, :phone_num, :acc, :img_data)
                 """)
 
-                with engine.begin() as conn:  # 자동 commit, rollback 지원
-                    conn.execute(insert_sql, {
-                        "usr_nm": name,
-                        "phone_num": phone_num,
-                        "acc": float(acc),
-                        "img_data": binary_data
-                    })
+                update_sql = text("""
+                    UPDATE image_acc SET acc = :acc, img_data = :img_data
+                    WHERE usr_nm = :usr_nm AND phone_num = :phone_num
+                """)
+
+                with engine.begin() as conn:
+                    result = conn.execute(check_sql, {"usr_nm": name, "phone_num": phone_num}).fetchone()
+
+                    if result is None:
+                        # 기존 데이터가 없으면 INSERT
+                        conn.execute(insert_sql, {
+                            "usr_nm": name,
+                            "phone_num": phone_num,
+                            "acc": float(acc),
+                            "img_data": binary_data
+                        })
+                    elif result[0] < float(acc):
+                        # 기존 데이터가 있고, 새로운 acc가 더 높은 경우 UPDATE
+                        conn.execute(update_sql, {
+                            "usr_nm": name,
+                            "phone_num": phone_num,
+                            "acc": float(acc),
+                            "img_data": binary_data
+                        })
 
                 # Streamlit 세션 상태 저장
                 st.session_state["acc"] = acc
