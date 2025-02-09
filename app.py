@@ -1,3 +1,4 @@
+########## Import ##########
 import re
 import streamlit as st
 from imghdr import what
@@ -6,6 +7,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 from src import image_accuracy_calculator, load_df, image_formatter
 
+########## Main ##########
 if __name__ == "__main__":
     st.set_page_config(page_title="프롬프트 정확도 측정기", page_icon="📜", layout="centered")
 
@@ -18,8 +20,8 @@ if __name__ == "__main__":
         st.session_state["phone_num"] = ""
 
     with st.form("input_data"):
-        name = st.text_input("이름을 입력해주세요", value=st.session_state["name"])
-        phone_num = st.text_input("전화번호를 입력해주세요(우승자 상품 제공 용도로 활용됩니다.) - 형식: 01012345678", value=st.session_state["phone_num"])
+        name = st.text_input("이름을 입력해주세요", value=st.session_state["name"]).strip()
+        phone_num = st.text_input("전화번호를 입력해주세요(우승자 상품 제공 용도로 활용됩니다.) 형식: 01012345678", value=st.session_state["phone_num"]).strip()
         image = st.file_uploader("이미지를 업로드해주세요.", type=["png", "jpg", "jpeg"])
 
         submit = st.form_submit_button("정확도 측정하기")
@@ -31,7 +33,7 @@ if __name__ == "__main__":
         st.write(f"{get_name}님의 프롬프트 점수는 {score}% 입니다.")
 
     select_sql = "SELECT * FROM image_acc"
-    df = load_df(Config.DATABASE_URL, select_sql)
+    df = load_df(st.secrets["DATABASE_URL"], select_sql)
     if len(df) > 0:
         st.write("")
         st.write("현재 랭킹👑")
@@ -61,7 +63,7 @@ if __name__ == "__main__":
             st.warning("⚠️ 파일 크기가 너무 큽니다! (최대 5MB)")
         else:
             try:
-                engine = create_engine(Config.DATABASE_URL)
+                engine = create_engine(st.secrets["DATABASE_URL"])
 
                 acc = image_accuracy_calculator(Config.ORG_IMG_DIR, image)
                 binary_data = image.getvalue()
