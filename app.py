@@ -25,7 +25,71 @@ if __name__ == "__main__":
         image = st.file_uploader("이미지를 업로드해주세요.", type=["png", "jpg", "jpeg"])
 
         submit = st.form_submit_button("정확도 측정하기")
-    
+
+    if submit:
+        if not name or not phone_num or not image:
+            st.warning("⚠️ 모든 필드를 입력해야 합니다!")
+        elif not re.match("^[a-zA-Z가-힣 ]+$", name):
+            st.warning("⚠️ 이름은 한글 또는 영문 문자만 입력해주세요!")
+        elif not re.match(r"^01[0-9]{8,9}$", phone_num):
+            st.warning("⚠️ 올바른 전화번호 형식을 입력하세요!")
+        elif what(None, h=image.getvalue()) not in ["jpeg", "png"]:
+            st.warning("⚠️ 지원되지 않는 이미지 형식입니다!")
+        elif len(image.getvalue()) > 5 * 1024 * 1024:
+            st.warning("⚠️ 파일 크기가 너무 큽니다! (최대 5MB)")
+        else:
+            try:
+                with st.spinner("정확도 측정 중...", show_time=True):
+                    engine = create_engine(st.secrets["DATABASE_URL"])
+
+                    acc = image_accuracy_calculator(Config.ORG_IMG_DIR, image)
+                    binary_data = image.getvalue()
+
+                    # 기존 데이터 확인 쿼리
+                    check_sql = text("""
+                        SELECT acc FROM image_acc WHERE usr_nm = :usr_nm AND phone_num = :phone_num
+                    """)
+
+                    insert_sql = text("""
+                        INSERT INTO image_acc (usr_nm, phone_num, acc, img_data)
+                        VALUES (:usr_nm, :phone_num, :acc, :img_data)
+                    """)
+
+                    update_sql = text("""
+                        UPDATE image_acc SET acc = :acc, img_data = :img_data
+                        WHERE usr_nm = :usr_nm AND phone_num = :phone_num
+                    """)
+
+                    with engine.begin() as conn:
+                        result = conn.execute(check_sql, {"usr_nm": name, "phone_num": phone_num}).fetchone()
+
+                        if result is None:
+                            # 기존 데이터가 없으면 INSERT
+                            conn.execute(insert_sql, {
+                                "usr_nm": name,
+                                "phone_num": phone_num,
+                                "acc": float(acc),
+                                "img_data": binary_data
+                            })
+                        elif result[0] < float(acc):
+                            # 기존 데이터가 있고, 새로운 acc가 더 높은 경우 UPDATE
+                            conn.execute(update_sql, {
+                                "usr_nm": name,
+                                "phone_num": phone_num,
+                                "acc": float(acc),
+                                "img_data": binary_data
+                            })
+
+                    # Streamlit 세션 상태 저장
+                    st.session_state["acc"] = acc
+                    st.session_state["name"] = name
+                    st.session_state["phone_num"] = phone_num
+
+                    st.rerun()
+
+            except SQLAlchemyError as e:
+                st.error(f"❌ 데이터베이스 오류: {e}")
+
     if ("name" in st.session_state and st.session_state.name) and ("acc" in st.session_state and st.session_state.acc):
         get_name = st.session_state.get("name", "")
         score = st.session_state.get("acc", "")
@@ -49,66 +113,3 @@ if __name__ == "__main__":
 
         # Streamlit에서 HTML로 출력
         st.markdown(table_html, unsafe_allow_html=True)
-
-    if submit:
-        if not name or not phone_num or not image:
-            st.warning("⚠️ 모든 필드를 입력해야 합니다!")
-        elif not re.match("^[a-zA-Z가-힣 ]+$", name):
-            st.warning("⚠️ 이름은 한글 또는 영문 문자만 입력해주세요!")
-        elif not re.match(r"^01[0-9]{8,9}$", phone_num):
-            st.warning("⚠️ 올바른 전화번호 형식을 입력하세요!")
-        elif what(None, h=image.getvalue()) not in ["jpeg", "png"]:
-            st.warning("⚠️ 지원되지 않는 이미지 형식입니다!")
-        elif len(image.getvalue()) > 5 * 1024 * 1024:
-            st.warning("⚠️ 파일 크기가 너무 큽니다! (최대 5MB)")
-        else:
-            try:
-                engine = create_engine(st.secrets["DATABASE_URL"])
-
-                acc = image_accuracy_calculator(Config.ORG_IMG_DIR, image)
-                binary_data = image.getvalue()
-
-                # 기존 데이터 확인 쿼리
-                check_sql = text("""
-                    SELECT acc FROM image_acc WHERE usr_nm = :usr_nm AND phone_num = :phone_num
-                """)
-
-                insert_sql = text("""
-                    INSERT INTO image_acc (usr_nm, phone_num, acc, img_data)
-                    VALUES (:usr_nm, :phone_num, :acc, :img_data)
-                """)
-
-                update_sql = text("""
-                    UPDATE image_acc SET acc = :acc, img_data = :img_data
-                    WHERE usr_nm = :usr_nm AND phone_num = :phone_num
-                """)
-
-                with engine.begin() as conn:
-                    result = conn.execute(check_sql, {"usr_nm": name, "phone_num": phone_num}).fetchone()
-
-                    if result is None:
-                        # 기존 데이터가 없으면 INSERT
-                        conn.execute(insert_sql, {
-                            "usr_nm": name,
-                            "phone_num": phone_num,
-                            "acc": float(acc),
-                            "img_data": binary_data
-                        })
-                    elif result[0] < float(acc):
-                        # 기존 데이터가 있고, 새로운 acc가 더 높은 경우 UPDATE
-                        conn.execute(update_sql, {
-                            "usr_nm": name,
-                            "phone_num": phone_num,
-                            "acc": float(acc),
-                            "img_data": binary_data
-                        })
-
-                # Streamlit 세션 상태 저장
-                st.session_state["acc"] = acc
-                st.session_state["name"] = name
-                st.session_state["phone_num"] = phone_num
-
-                st.rerun()
-
-            except SQLAlchemyError as e:
-                st.error(f"❌ 데이터베이스 오류: {e}")
